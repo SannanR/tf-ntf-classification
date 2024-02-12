@@ -347,9 +347,7 @@ def process_and_predict(fasta_file, model):
 
 
 def main():
-    st.title("Protein Prediction Web App") 
-    file_ = open("./WebPic.gif", "rb")
-    contents = file_.read()
+    st.title("Transcription Factors Prediction Web App") 
 
     # Sidebar for user input# Sidebar for user input
     st.sidebar.subheader("Input Sequence(s) (FASTA FORMAT ONLY)")
@@ -358,9 +356,9 @@ def main():
     # Example button
     if st.button('Example'):
         example_sequences = [
-            ">sp|O95476|CNEP1_HUMAN ...",  # Example sequence 1
-            ">sp|Q99653|CHP1_HUMAN ...",  # Example sequence 2
-            ">sp|P32929|CGL_HUMAN ...",  # Example sequence 3
+            ">spO95476 CCNFGHIGHK ...",  # Example sequence 1
+            ">spQ99653 AAAASSSFFFIIIEE ...",  # Example sequence 2
+            ">spP32929 CCCCGGGGGGGJJKKK ...",  # Example sequence 3
         ]
         st.code("\n".join(example_sequences), language="markdown")
 
