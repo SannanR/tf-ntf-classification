@@ -291,6 +291,12 @@ def processAllStrings(fname):
                 i = i + 1
     return allFVs
 
+# Load the stacking model using pickle
+def load_stacking_model(model_path):
+    with open(model_path, 'rb') as file:
+        model = pickle.load(file)
+    return model
+
 # Load the XGBoost model using pickle
 def load_xgboost_model(model_path):
     with open(model_path, 'rb') as file:
@@ -309,17 +315,17 @@ def make_predictions(model, input_data):
     return predictions
 
 # Function to process the uploaded .fasta file, extract features, and make predictions
-def process_and_predict(fasta_file, model):
+def process_and_predict(fasta_file_path, model):
     all_feature_vectors = []
     protein_names = []
 
     # Extract features for each sequence
-    for seq_record in SeqIO.parse(fasta_file, "fasta"):
+    for seq_record in SeqIO.parse(fasta_file_path, "fasta"):
         seq = str(seq_record.seq)
         protein_name = seq_record.id  # Extracting protein heading name
         protein_names.append(protein_name)
 
-        feature_vector = calcFV(seq)  # Assuming calcFV is defined in your code
+        feature_vector = calcFV(seq)
         all_feature_vectors.append(feature_vector)
 
     # Preprocess the feature vectors
@@ -335,23 +341,29 @@ def process_and_predict(fasta_file, model):
     predictions = make_predictions(model, scaled_data)
 
     # Map predictions to "Non-TF" and "TF"
-    class_mapping = {0: "Non-TF", 1: "TF"}
+    class_mapping = {0: "α-Helices MADS box", 1: "All α-Helices HMG", 2: "Basic Leucine Zipper", 3: "C3H Zinc Finger", 4: "Helix-Turn-Helix", 5: "Helix-Loop-Helix", 6: "Helix-Span-Helix", 7: "Nuclear receptors with C4 Zinc Finger", 8: "T-Box"}
     mapped_predictions = [class_mapping[prediction] for prediction in predictions]
 
     # Combine protein names with predictions
     result = list(zip(protein_names, mapped_predictions))
 
-    # Display the results in Streamlit
-    for protein_name, prediction in result:
-        st.write(f"Protein: {protein_name}, Label: {prediction}")
+    # Print the results
+    #for protein_name, prediction in result:
+        #print(f"Protein: {protein_name} , Label: {prediction}")
 
+    # Print the results
+    for protein_name, prediction in result:
+        st.write(f"Protein: {protein_name} , Label: {prediction}")
 
 def main():
-    st.title("Transcription Factors Prediction Web App") 
+    st.title("Transcription Factors and Family Classification")
 
-    # Sidebar for user input# Sidebar for user input
+    # Sidebar for user input
     st.sidebar.subheader("Input Sequence(s) (FASTA FORMAT ONLY)")
     fasta_string = st.sidebar.text_area("Sequence Input", height=200)
+
+    # Model selection buttons
+    model_selection = st.sidebar.radio("Select Model", ("TF/NTF", "TF Family"))
 
     # Example button
     if st.button('Example'):
@@ -368,10 +380,16 @@ def main():
             st.info("Please input the sequence first.")
         else:
             fasta_io = StringIO(fasta_string)
-            # Load the XGBoost model
-            model_path = 'xgboost_model.joblib'  # Replace with the correct path to your model
-            xgboost_model = load_xgboost_model(model_path)
-            process_and_predict(fasta_io, xgboost_model)
+
+            # Load the appropriate model based on user selection
+            if model_selection == "TF/NTF":
+                model_path = 'xgboost_model.joblib'  # Replace with the correct path to your binary model
+                model = load_xgboost_model(model_path)
+                process_and_predict(fasta_io, model)
+            elif model_selection == "TF Family":
+                model_path = 'lgbm_model.pkl'  # Replace with the correct path to your multi-class model
+                model = load_stacking_model(model_path)
+                process_and_predict(fasta_io, model)
 
 if __name__ == "__main__":
     main()
