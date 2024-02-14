@@ -325,7 +325,7 @@ def process_and_predict(fasta_file_path, model):
         protein_name = seq_record.id  # Extracting protein heading name
         protein_names.append(protein_name)
 
-        feature_vector = calcFV(seq)
+        feature_vector = calcFV(seq) # Assuming calcFV is defined elsewhere
         all_feature_vectors.append(feature_vector)
 
     # Preprocess the feature vectors
@@ -337,19 +337,15 @@ def process_and_predict(fasta_file_path, model):
     # Scale the data using StandardScaler
     scaled_data = preprocess_input_data(input_data)
 
-    # Make predictions using the XGBoost model
+    # Make predictions using the model
     predictions = make_predictions(model, scaled_data)
 
-    # Map predictions to "Non-TF" and "TF"
+    # Map predictions to class labels
     class_mapping = {0: "α-Helices MADS box", 1: "All α-Helices HMG", 2: "Basic Leucine Zipper", 3: "C3H Zinc Finger", 4: "Helix-Turn-Helix", 5: "Helix-Loop-Helix", 6: "Helix-Span-Helix", 7: "Nuclear receptors with C4 Zinc Finger", 8: "T-Box"}
     mapped_predictions = [class_mapping[prediction] for prediction in predictions]
 
     # Combine protein names with predictions
     result = list(zip(protein_names, mapped_predictions))
-
-    # Print the results
-    #for protein_name, prediction in result:
-        #print(f"Protein: {protein_name} , Label: {prediction}")
 
     # Print the results
     for protein_name, prediction in result:
@@ -363,7 +359,15 @@ def main():
     fasta_string = st.sidebar.text_area("Sequence Input", height=200)
 
     # Model selection buttons
-    model_selection = st.sidebar.radio("Select Model", ("TF/NTF", "TF Family"))
+    if st.sidebar.button("TF-NTF"):
+        model_path = 'xgboost_model.joblib'  # Replace with the correct path to your XGBoost model
+        model = load_xgboost_model(model_path)
+        process_and_predict(fasta_io, model)
+
+    if st.sidebar.button("TF-Family"):
+        model_path = 'lgbm_model.pkl'  # Replace with the correct path to your LightGBM model
+        model = load_stacking_model(model_path)
+        process_and_predict(fasta_io, model)
 
     # Example button
     if st.button('Example'):
@@ -380,16 +384,6 @@ def main():
             st.info("Please input the sequence first.")
         else:
             fasta_io = StringIO(fasta_string)
-
-            # Load the appropriate model based on user selection
-            if model_selection == "TF/NTF":
-                model_path = 'xgboost_model.joblib'  # Replace with the correct path to your binary model
-                model = load_xgboost_model(model_path)
-                process_and_predict(fasta_io, model)
-            elif model_selection == "TF Family":
-                model_path = 'lgbm_model.pkl'  # Replace with the correct path to your multi-class model
-                model = load_stacking_model(model_path)
-                process_and_predict(fasta_io, model)
 
 if __name__ == "__main__":
     main()
